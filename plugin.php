@@ -18,22 +18,22 @@ function jdgc_get_calendar($calendarfeed, $items_to_show=10) {
   //
 
   // Date format you want your details to appear
-  $dateformat="j F Y"; // 10 March 2009 - see http://www.php.net/date for details
+  $dateformat="j M"; // 10 March 2009 - see http://www.php.net/date for details
   $timeformat="g.ia"; // 12.15am
 
   // The timezone that your user/venue is in (i.e. the time you're entering stuff in Google Calendar.) http://www.php.net/manual/en/timezones.php has a full list
-  date_default_timezone_set('Europe/London');
+  date_default_timezone_set('America/Vancouver');
 
   // How you want each thing to display.
   // By default, this contains all the bits you can grab. You can put ###DATE### in here too if you want to, and disable the 'group by date' below.
-  $event_display="<P><B>###TITLE###</b> - from ###FROM### ###DATESTART### until ###UNTIL### ###DATEEND### (<a href='###LINK###'>add this</a>)<BR>###WHERE### (<a href='###MAPLINK###'>map</a>)<br>###DESCRIPTION###</p>";
+  $event_display="<li><a href='###LINK###'><span class='red'>###DATE###</span>&nbsp;###TITLE###</a></li>";
 
   // What happens if there's nothing to display
   $event_error="<P>There are no events to display.</p>";
 
   // The separate date header is here
   $event_dateheader="<P><B>###DATE###</b></P>";
-  $GroupByDate=true;
+  $GroupByDate=false;
   // Change the above to 'false' if you don't want to group this by dates.
 
   // ...and here's where you tell it to use a cache.
@@ -68,9 +68,10 @@ function jdgc_get_calendar($calendarfeed, $items_to_show=10) {
     //
    
     $cache_time = 3600*12; // 12 hours
-    $cache_file = $_SERVER['DOCUMENT_ROOT'].'/gcal.xml'; //xml file saved on server
+    $wp_content_directory = realpath(dirname(__FILE__) . '/../../');
+    $cache_file = $wp_content_directory.'/jdgc_cache.xml'; //xml file saved on server
    
-    if ($debug_mode) {$o .= "<P>Your cache is saved at ".$cache_file."</P>";}
+    if ($debug_mode) { $o .= "<P>Your cache is saved at ".$cache_file."</P>";}
    
     $timedif = @(time() - filemtime($cache_file));
 
@@ -148,7 +149,9 @@ function jdgc_get_calendar($calendarfeed, $items_to_show=10) {
     $temp_event=str_replace("&quot;","\"",$temp_event);
                      
     if (($items_to_show>0 AND $items_shown<$items_to_show)) {
-      if ($GroupByDate) {if ($gCalDate!=$old_date) { $o .= $temp_dateheader; $old_date=$gCalDate;}}
+      if ($GroupByDate) {
+        if ($gCalDate!=$old_date) { $o .= $temp_dateheader; $old_date=$gCalDate;}
+      }
       $o .= $temp_event;
       $items_shown++;
     }
@@ -157,6 +160,8 @@ function jdgc_get_calendar($calendarfeed, $items_to_show=10) {
   if (!$items_shown) { 
     $o .= $event_error; 
   }
+
+  return $o;
 }
 
 // The template tag:
