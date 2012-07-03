@@ -18,7 +18,7 @@ function jdgc_get_calendar($calendarfeed, $items_to_show=10) {
   //
 
   // Date format you want your details to appear
-  $dateformat="j M"; // 10 March 2009 - see http://www.php.net/date for details
+  $dateformat="j M"; // 10 Mar - see http://www.php.net/date for details
   $timeformat="g.ia"; // 12.15am
 
   // The timezone that your user/venue is in (i.e. the time you're entering stuff in Google Calendar.) http://www.php.net/manual/en/timezones.php has a full list
@@ -169,4 +169,13 @@ function jdgc_calendar($calendarfeed, $items_to_show=10) {
   echo jdgc_get_calendar($calendarfeed, $items_to_show);
 }
 
+function jdgc_calendar_shortcode($atts) {
+  extract(shortcode_atts(array(
+    'feed_url' => null,
+    'items_to_show' => 10,
+  ), $atts));
+  return jdgc_get_calendar($feed_url, $items_to_show);
+}
+
+add_shortcode('jdgc_calendar', 'jdgc_calendar_shortcode');
 
