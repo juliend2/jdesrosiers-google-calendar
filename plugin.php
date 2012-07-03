@@ -57,7 +57,7 @@ function jdgc_get_calendar($calendarfeed, $items_to_show=10) {
   ini_set('error_reporting', E_ALL); $o .= "<P>Debug mode is on. Hello there.<BR>Your server thinks the time is ".date(DATE_RFC822)."</p>";}
 
   // Form the XML address.
-  $calendar_xml_address = str_replace("/basic","/full?singleevents=true&futureevents=true&max-results".$items_to_show."&orderby=starttime&sortorder=a",$calendarfeed); //This goes and gets future events in your feed.
+  $calendar_xml_address = str_replace("/basic","/full?singleevents=true&futureevents=true&max-results".$items_to_show."&orderby=starttime&sortorder=d",$calendarfeed); //This goes and gets future events in your feed.
 
   if ($debug_mode) {
   $o .= "<P>We're going to go and grab <a href='$calendar_xml_address'>this feed</a>.<P>";}
@@ -115,11 +115,11 @@ function jdgc_get_calendar($calendarfeed, $items_to_show=10) {
     if ($debug_mode) { $o .= "<P>Here's the next item's start time... GCal says ".$ns_gd->when->attributes()->startTime." PHP says ".date("g.ia  -Z",strtotime($ns_gd->when->attributes()->startTime))."</p>"; }
 
     // These are the dates we'll display
-    $gCalDate = date($dateformat, strtotime($ns_gd->when->attributes()->startTime));
-    $gCalDateStart = date($dateformat, strtotime($ns_gd->when->attributes()->startTime));
-    $gCalDateEnd = date($dateformat, strtotime($ns_gd->when->attributes()->endTime));
-    $gCalStartTime = date($timeformat, strtotime($ns_gd->when->attributes()->startTime));
-    $gCalEndTime = date($timeformat, strtotime($ns_gd->when->attributes()->endTime));
+    $gCalDate = date_i18n($dateformat, strtotime($ns_gd->when->attributes()->startTime));
+    $gCalDateStart = date_i18n($dateformat, strtotime($ns_gd->when->attributes()->startTime));
+    $gCalDateEnd = date_i18n($dateformat, strtotime($ns_gd->when->attributes()->endTime));
+    $gCalStartTime = date_i18n($timeformat, strtotime($ns_gd->when->attributes()->startTime));
+    $gCalEndTime = date_i18n($timeformat, strtotime($ns_gd->when->attributes()->endTime));
                      
     // Now, let's run it through some str_replaces, and store it with the date for easy sorting later
     $temp_event=$event_display;
