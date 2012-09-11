@@ -12,6 +12,7 @@ Author URI: http://www.juliendesrosiers.com
 
 
 
+
 // Takes:
 // - $config : Hash of the call's configurations 
 // - $calendar_xml_address : String of the calendar xml address
@@ -20,8 +21,9 @@ Author URI: http://www.juliendesrosiers.com
 function jdgc_get_calendar_xml($config, $calendar_xml_address) {
   if ($config['use_cache']) {
     $cache_time = 3600*12; // 12 hours
+    $url_hash = md5($calendar_xml_address); // to make the files unique for each feed url
     $wp_content_directory = realpath(dirname(__FILE__) . '/tmp/');
-    $cache_file = $wp_content_directory.'/jdgc_cache.xml'; //xml file saved on server
+    $cache_file = $wp_content_directory.'/jdgc_cache_'.$url_hash.'.xml'; //xml file saved on server
    
     $timedif = @(time() - filemtime($cache_file));
 
@@ -46,33 +48,30 @@ function jdgc_get_calendar_xml($config, $calendar_xml_address) {
 }
 
 
+
+// Takes a $settings Hash
+//
 // Returns the calendar HTML
 function jdgc_get_calendar($settings) {
 
   // Configurations:
-  //
   $config = array_merge(array(
-    'feed_url' => null,
+    'feed_url' => null, // Can contain many feed URLs separated by commas (,)
     'items_to_show' => 10,
     'date_format' => 'j M', // 10 Mar - see http://www.php.net/date for details
     'time_format' => 'g.ia', // 12.15am
-
     // The timezone that your user/venue is in 
     // (i.e. the time you're entering stuff in Google Calendar.) 
     // http://www.php.net/manual/en/timezones.php has a full list 
     'time_zone' => 'America/Vancouver', 
-
     // How you want each thing to display.
     // By default, this contains all the bits you can grab. You can put ###DATE### in here too if you want to, and disable the 'group by date' below.
     'event_display' => "<li><a href='###LINK###'><span class='red'>###DATE###</span>&nbsp;###TITLE###</a></li>",
-
     // The separate date header is here
     'event_dateheader' => "<P><B>###DATE###</b></P>",
     'group_by_date' => false, // change to true if you want to group by dates
-
     // ...and here's where you tell it to use a cache.
     'use_cache' => true,
-
   ), $settings);
 
   date_default_timezone_set($config['time_zone']);
@@ -82,16 +81,31 @@ function jdgc_get_calendar($settings) {
 
   $o = ''; // HTML output variable
 
-  // Form the XML address.
-  $calendar_xml_address = str_replace("/basic","/full?singleevents=true&futureevents=true&max-results".$config['items_to_show']."&orderby=starttime&sortorder=a",$config['feed_url']); //This goes and gets future events in your feed.
+  $feed_urls = split(',', $config['feed_url']);
+  $entries = array();
 
-  $xml = jdgc_get_calendar_xml($config, $calendar_xml_address);
+  // for each feed URL, append every entries to the $entries array
+  foreach ($feed_urls as $feed_url) {
+    // Form the XML address.
+    $calendar_xml_address = str_replace(
+      "/basic",
+      "/full?singleevents=true&futureevents=true&max-results".$config['items_to_show']."&orderby=starttime&sortorder=a",
+      trim($feed_url)); //This goes and gets future events in your feed.
 
-  $items_shown=0;
-  $old_date="";
-  $xml->asXML();
+    $xml = jdgc_get_calendar_xml($config, $calendar_xml_address);
 
-  foreach ($xml->entry as $entry){
+    $items_shown=0;
+    $old_date="";
+    $xml->asXML();
+
+    // prepare an array of entries:
+    foreach ($xml->entry as $entry) {
+      $entries[] = $entry;
+    }
+  }
+
+  // for each entry, generate an HTML element
+  foreach ($entries as $entry){
     $ns_gd = $entry->children('http://schemas.google.com/g/2005');
 
     //Do some niceness to the description
@@ -113,6 +127,7 @@ function jdgc_get_calendar($settings) {
     $temp_dateheader=$config['event_dateheader'];
     $temp_event=str_replace("###TITLE###",$entry->title,$temp_event);
     $temp_event=str_replace("###DESCRIPTION###",$description,$temp_event);
+    $temp_event .= '<!--'.str_replace('-', '', $ns_gd->when->attributes()->startTime).'-->';
 
     if ($gCalDateStart!=$gCalDateEnd) {
       //This starts and ends on a different date, so show the dates
@@ -151,17 +166,15 @@ function jdgc_get_calendar($settings) {
   return $o;
 }
 
+
+
 // The template tag:
 function jdgc_calendar($config) {
   echo jdgc_get_calendar($config);
 }
 
 function jdgc_calendar_shortcode($atts) {
-  $config = shortcode_atts(array(
-    'feed_url' => null,
-    'items_to_show' => 10,
-  ), $atts);
-  return jdgc_get_calendar($config);
+  return jdgc_get_calendar($atts);
 }
 
 if (function_exists('add_shortcode')) {
