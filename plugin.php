@@ -68,7 +68,7 @@ function jdgc_get_calendar($calendarfeed, $items_to_show=10) {
     //
    
     $cache_time = 3600*12; // 12 hours
-    $wp_content_directory = realpath(dirname(__FILE__) . '/../../');
+    $wp_content_directory = realpath(dirname(__FILE__) . '/tmp/');
     $cache_file = $wp_content_directory.'/jdgc_cache.xml'; //xml file saved on server
    
     if ($debug_mode) { $o .= "<P>Your cache is saved at ".$cache_file."</P>";}
@@ -176,6 +176,7 @@ function jdgc_calendar_shortcode($atts) {
   ), $atts));
   return jdgc_get_calendar($feed_url, $items_to_show);
 }
+
 if (function_exists('add_shortcode')) {
   add_shortcode('jdgc_calendar', 'jdgc_calendar_shortcode');
 }
