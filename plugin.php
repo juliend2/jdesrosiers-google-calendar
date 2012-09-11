@@ -10,8 +10,47 @@ Author URI: http://www.juliendesrosiers.com
 
 // (Most of the code is taken from: https://raw.github.com/media-uk/GCalPHP )
 
+
+
+// Takes:
+// - $config : Hash of the call's configurations 
+// - $calendar_xml_address : String of the calendar xml address
+// 
+// Returns a SimpleXML object
+function jdgc_get_calendar_xml($config, $calendar_xml_address) {
+  if ($config['use_cache']) {
+    $cache_time = 3600*12; // 12 hours
+    $wp_content_directory = realpath(dirname(__FILE__) . '/tmp/');
+    $cache_file = $wp_content_directory.'/jdgc_cache.xml'; //xml file saved on server
+   
+    $timedif = @(time() - filemtime($cache_file));
+
+    $xml = "";
+    if (file_exists($cache_file) && $timedif < $cache_time) {
+      $str = file_get_contents($cache_file);
+      $xml = simplexml_load_string($str);
+    } else { //not here
+      $xml = simplexml_load_file($calendar_xml_address); //come here
+      if ($f = fopen($cache_file, 'w')) { //save info
+        $str = $xml->asXML();
+        fwrite ($f, $str, strlen($str));
+        fclose($f);
+      } else { $o .= "<P>Can't write to the cache.</P>"; }
+    }
+   
+  } else { // no caching
+    $xml = simplexml_load_file($calendar_xml_address);
+  }
+   
+  return $xml;
+}
+
+
 // Returns the calendar HTML
 function jdgc_get_calendar($settings) {
+
+  // Configurations:
+  //
   $config = array_merge(array(
     'feed_url' => null,
     'items_to_show' => 10,
@@ -34,55 +73,19 @@ function jdgc_get_calendar($settings) {
     // ...and here's where you tell it to use a cache.
     'use_cache' => true,
 
-
   ), $settings);
-
-  /////////
-  //Configuration
-  //
 
   date_default_timezone_set($config['time_zone']);
 
   // What happens if there's nothing to display
   $event_error="<P>There are no events to display.</p>";
 
-  //
-  //End of configuration block
-  /////////
-
   $o = ''; // HTML output variable
 
   // Form the XML address.
   $calendar_xml_address = str_replace("/basic","/full?singleevents=true&futureevents=true&max-results".$config['items_to_show']."&orderby=starttime&sortorder=a",$config['feed_url']); //This goes and gets future events in your feed.
 
-  if ($config['use_cache']) {
-    ////////
-    //Cache
-    //
-   
-    $cache_time = 3600*12; // 12 hours
-    $wp_content_directory = realpath(dirname(__FILE__) . '/tmp/');
-    $cache_file = $wp_content_directory.'/jdgc_cache.xml'; //xml file saved on server
-   
-    $timedif = @(time() - filemtime($cache_file));
-
-    $xml = "";
-    if (file_exists($cache_file) && $timedif < $cache_time) {
-      $str = file_get_contents($cache_file);
-      $xml = simplexml_load_string($str);
-    } else { //not here
-      $xml = simplexml_load_file($calendar_xml_address); //come here
-      if ($f = fopen($cache_file, 'w')) { //save info
-        $str = $xml->asXML();
-        fwrite ($f, $str, strlen($str));
-        fclose($f);
-      } else { $o .= "<P>Can't write to the cache.</P>"; }
-    }
-   
-    //done!
-  } else {
-    $xml = simplexml_load_file($calendar_xml_address);
-  }
+  $xml = jdgc_get_calendar_xml($config, $calendar_xml_address);
 
   $items_shown=0;
   $old_date="";
