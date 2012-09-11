@@ -57,7 +57,7 @@ function jdgc_get_calendar($calendarfeed, $items_to_show=10) {
   ini_set('error_reporting', E_ALL); $o .= "<P>Debug mode is on. Hello there.<BR>Your server thinks the time is ".date(DATE_RFC822)."</p>";}
 
   // Form the XML address.
-  $calendar_xml_address = str_replace("/basic","/full?singleevents=true&futureevents=true&max-results".$items_to_show."&orderby=starttime&sortorder=d",$calendarfeed); //This goes and gets future events in your feed.
+  $calendar_xml_address = str_replace("/basic","/full?singleevents=true&futureevents=true&max-results".$items_to_show."&orderby=starttime&sortorder=a",$calendarfeed); //This goes and gets future events in your feed.
 
   if ($debug_mode) {
   $o .= "<P>We're going to go and grab <a href='$calendar_xml_address'>this feed</a>.<P>";}
@@ -176,6 +176,7 @@ function jdgc_calendar_shortcode($atts) {
   ), $atts));
   return jdgc_get_calendar($feed_url, $items_to_show);
 }
-
-add_shortcode('jdgc_calendar', 'jdgc_calendar_shortcode');
+if (function_exists('add_shortcode')) {
+  add_shortcode('jdgc_calendar', 'jdgc_calendar_shortcode');
+}
 
