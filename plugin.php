@@ -100,34 +100,50 @@ function jdgc_get_calendar($settings) {
 
     // prepare an array of entries:
     foreach ($xml->entry as $entry) {
-      $entries[] = $entry;
+      $ns_gd = $entry->children('http://schemas.google.com/g/2005');
+      $entries[] = array(
+        'title'=>strval($entry->title),
+        'content'=>strval($entry->content),
+        'href'=>strval($entry->link->attributes()->href),
+        'start_time' => strval($ns_gd->when->attributes()->startTime),
+        'end_time' => strval($ns_gd->when->attributes()->endTime),
+        'where' => strval($ns_gd->where->attributes()->valueString),
+      );
     }
   }
 
+  // sort the entries by their start date
+  function sort_func($a, $b) {
+    $a_start = (int)str_replace('-', '', $a['start_time']);
+    $b_start = (int)str_replace('-', '', $b['start_time']);
+    if ($a_start == $b_start) return 0;
+    return ($a_start < $b_start) ? -1 : 1;
+  }
+  usort($entries, 'sort_func');
+
   // for each entry, generate an HTML element
   foreach ($entries as $entry){
-    $ns_gd = $entry->children('http://schemas.google.com/g/2005');
 
     //Do some niceness to the description
     //Make any URLs used in the description clickable
-    $description = preg_replace('"\b(http://\S+)"', '<a href="$1">$1</a>', $entry->content);
+    $description = preg_replace('"\b(http://\S+)"', '<a href="$1">$1</a>', $entry['content']);
     
     // Make email addresses in the description clickable
     $description = preg_replace("`([-_a-z0-9]+(\.[-_a-z0-9]+)*@[-a-z0-9]+(\.[-a-z0-9]+)*\.[a-z]{2,6})`i","<a href=\"mailto:\\1\" title=\"mailto:\\1\">\\1</a>", $description);
 
     // These are the dates we'll display
-    $gCalDate = date_i18n($config['date_format'], strtotime($ns_gd->when->attributes()->startTime));
-    $gCalDateStart = date_i18n($config['date_format'], strtotime($ns_gd->when->attributes()->startTime));
-    $gCalDateEnd = date_i18n($config['date_format'], strtotime($ns_gd->when->attributes()->endTime));
-    $gCalStartTime = date_i18n($config['time_format'], strtotime($ns_gd->when->attributes()->startTime));
-    $gCalEndTime = date_i18n($config['time_format'], strtotime($ns_gd->when->attributes()->endTime));
+    $gCalDate = date_i18n($config['date_format'], strtotime($entry['start_time']));
+    $gCalDateStart = date_i18n($config['date_format'], strtotime($entry['start_time']));
+    $gCalDateEnd = date_i18n($config['date_format'], strtotime($entry['end_time']));
+    $gCalStartTime = date_i18n($config['time_format'], strtotime($entry['start_time']));
+    $gCalEndTime = date_i18n($config['time_format'], strtotime($entry['end_time']));
                      
     // Now, let's run it through some str_replaces, and store it with the date for easy sorting later
     $temp_event=$config['event_display'];
     $temp_dateheader=$config['event_dateheader'];
-    $temp_event=str_replace("###TITLE###",$entry->title,$temp_event);
+    $temp_event=str_replace("###TITLE###",$entry['title'],$temp_event);
     $temp_event=str_replace("###DESCRIPTION###",$description,$temp_event);
-    $temp_event .= '<!--'.str_replace('-', '', $ns_gd->when->attributes()->startTime).'-->';
+    $temp_event .= '<!--'.(int)str_replace('-', '', $entry['start_time']).'-->';
 
     if ($gCalDateStart!=$gCalDateEnd) {
       //This starts and ends on a different date, so show the dates
@@ -142,9 +158,9 @@ function jdgc_get_calendar($settings) {
     $temp_dateheader=str_replace("###DATE###",$gCalDate,$temp_dateheader);
     $temp_event=str_replace("###FROM###",$gCalStartTime,$temp_event);
     $temp_event=str_replace("###UNTIL###",$gCalEndTime,$temp_event);
-    $temp_event=str_replace("###WHERE###",$ns_gd->where->attributes()->valueString,$temp_event);
-    $temp_event=str_replace("###LINK###",$entry->link->attributes()->href,$temp_event);
-    $temp_event=str_replace("###MAPLINK###","http://maps.google.com/?q=".urlencode($ns_gd->where->attributes()->valueString),$temp_event);
+    $temp_event=str_replace("###WHERE###",$entry['where'],$temp_event);
+    $temp_event=str_replace("###LINK###",$entry['href'],$temp_event);
+    $temp_event=str_replace("###MAPLINK###","http://maps.google.com/?q=".urlencode($entry['where']),$temp_event);
     // Accept and translate HTML
     $temp_event=str_replace("&lt;","<",$temp_event);
     $temp_event=str_replace("&gt;",">",$temp_event);
