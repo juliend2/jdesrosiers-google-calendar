@@ -79,7 +79,7 @@ function jdgc_get_calendar($settings) {
   // What happens if there's nothing to display
   $event_error="<P>There are no events to display.</p>";
 
-  $o = ''; // HTML output variable
+  $o = '<ul class="jdgc-events">'; // HTML output variable
 
   $feed_urls = split(',', $config['feed_url']);
   $entries = array();
@@ -143,7 +143,6 @@ function jdgc_get_calendar($settings) {
     $temp_dateheader=$config['event_dateheader'];
     $temp_event=str_replace("###TITLE###",$entry['title'],$temp_event);
     $temp_event=str_replace("###DESCRIPTION###",$description,$temp_event);
-    $temp_event .= '<!--'.(int)str_replace('-', '', $entry['start_time']).'-->';
 
     if ($gCalDateStart!=$gCalDateEnd) {
       //This starts and ends on a different date, so show the dates
@@ -178,6 +177,7 @@ function jdgc_get_calendar($settings) {
   if (!$items_shown) { 
     $o .= $event_error; 
   }
+  $o .= '</ul>';
 
   return $o;
 }
